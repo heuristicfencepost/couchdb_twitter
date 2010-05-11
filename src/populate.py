@@ -64,21 +64,32 @@ def unique_everseen(iterable, key=None):
 
 if __name__ == "__main__":
 
+    tweetdb = "tweets"
+    authordb = "authors"
+
     search = Twitter(domain="search.twitter.com")
-    searchresults = search.search(q=searchquery,rpp=100)
-    tweets = searchresults["results"]
+    twitter = Twitter()
 
     conn = httplib.HTTPConnection(dbhost,dbport)
-    tweetdb = "tweets"
+
 
     # Make sure our database exists
     createDatabase(conn,tweetdb)
 
     # Create a doc in the tweet database, one for each distinct tweet
+    searchresults = search.search(q=searchquery,rpp=100)
+    tweets = searchresults["results"]
     def createTweet(tweet):
         createDocument(conn,tweetdb,tweet["id"],tweet)
     map(createTweet,tweets)
 
+    createDatabase(conn,authordb)
 
     authors = unique_everseen([t["from_user"] for t in tweets])
+    def createAuthor(authorname):
+        print "Adding author %s" % authorname
+        createDocument(conn,authordb,authorname,twitter.users.show(id=authorname))
+    map(createAuthor,authors)
+
+
     print " ".join(authors)
