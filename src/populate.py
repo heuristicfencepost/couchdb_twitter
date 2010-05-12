@@ -9,9 +9,12 @@ from twitter.api import Twitter
 
 # Populate a CouchDB instance with a set of data obtained from Twitter.  These
 # include the following:
+#
 # - The first 100 tweets corresponding to a search term
 # - Information about the set of authors for these tweets
 # - The set of followers for each of these authors
+#
+# Each type of information is stored within it's own unique database.
 dbhost = "localhost"
 dbport = 5984
 
