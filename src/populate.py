@@ -66,30 +66,35 @@ if __name__ == "__main__":
 
     tweetdb = "tweets"
     authordb = "authors"
+    followersdb = "followers"
 
     search = Twitter(domain="search.twitter.com")
     twitter = Twitter()
 
     conn = httplib.HTTPConnection(dbhost,dbport)
 
-
-    # Make sure our database exists
+    # Create a doc in the tweet database, one for each distinct tweet.  First
+    # make sure the DB exists.
     createDatabase(conn,tweetdb)
 
-    # Create a doc in the tweet database, one for each distinct tweet
     searchresults = search.search(q=searchquery,rpp=100)
     tweets = searchresults["results"]
     def createTweet(tweet):
         createDocument(conn,tweetdb,tweet["id"],tweet)
     map(createTweet,tweets)
 
+    # Add a new doc in the authors DB, one for each distinct tweet author
     createDatabase(conn,authordb)
 
-    authors = unique_everseen([t["from_user"] for t in tweets])
+    authors = list(unique_everseen([t["from_user"] for t in tweets]))
     def createAuthor(authorname):
         print "Adding author %s" % authorname
         createDocument(conn,authordb,authorname,twitter.users.show(id=authorname))
     map(createAuthor,authors)
 
+    # Finally create a doc describing the followers for each distint author
+    createDatabase(conn,followersdb)
 
-    print " ".join(authors)
+    def getFollowers(authorname):
+        createDocument(conn,followersdb,authorname,dict(ids=twitter.followers.ids(id=authorname)))
+    map(getFollowers,authors)
