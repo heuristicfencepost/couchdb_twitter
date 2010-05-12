@@ -28,9 +28,11 @@ def createDatabase(dbconn,dbname):
     r = dbconn.getresponse()
     r.read() # body must be read in order for subsequent HTTP requests to work
     if r.status == 412:
-        print "Database %s already exists" % dbname
-    elif r.status != 201:
-        print "Unable to create database %s: %s" % (dbname,r.reason)
+        return["Database %s already exists" % dbname]
+    elif r.status == 201:
+        return []
+    else:
+        return ["Unable to create database %s: %s" % (dbname,r.reason)]
 
 def createDocument(dbconn,dbname,docname,doc):
 
@@ -38,13 +40,11 @@ def createDocument(dbconn,dbname,docname,doc):
     r = dbconn.getresponse()
     r.read() # body must be read in order for subsequent HTTP requests to work
     if r.status == 409:
-        print "Version conflict detected for document %s" % (docname)
+        return ["Version conflict detected for document %s" % (docname)]
     elif r.status == 201:
-        print "Document %s created" % docname
-    elif r.status == 202:
-        print "Document %s created" % docname
+        return []
     else:
-        print "Unable to create document %s: %s" % (docname,r.reason)
+        return ["Unable to create document %s: %s" % (docname,r.reason)]
 
 # Borrowed from the itertools docs
 def unique_everseen(iterable, key=None):
@@ -80,21 +80,24 @@ if __name__ == "__main__":
     searchresults = search.search(q=searchquery,rpp=100)
     tweets = searchresults["results"]
     def createTweet(tweet):
-        createDocument(conn,tweetdb,tweet["id"],tweet)
-    map(createTweet,tweets)
+        return (tweet["id"],createDocument(conn,tweetdb,tweet["id"],tweet))
+    tweetmap = dict(map(createTweet,tweets))
+    print "Tweets created: %s" % ",".join([str(k) for (k,v) in tweetmap.iteritems() if not v])
 
     # Add a new doc in the authors DB, one for each distinct tweet author
     createDatabase(conn,authordb)
 
     authors = list(unique_everseen([t["from_user"] for t in tweets]))
     def createAuthor(authorname):
-        print "Adding author %s" % authorname
-        createDocument(conn,authordb,authorname,twitter.users.show(id=authorname))
-    map(createAuthor,authors)
+        return (authorname,createDocument(conn,authordb,authorname,twitter.users.show(id=authorname)))
+    authormap = dict(map(createAuthor,authors))
+    print "Authors created: %s" % ",".join([k for (k,v) in authormap.iteritems() if not v])
 
     # Finally create a doc describing the followers for each distint author
     createDatabase(conn,followersdb)
 
     def getFollowers(authorname):
-        createDocument(conn,followersdb,authorname,dict(ids=twitter.followers.ids(id=authorname)))
-    map(getFollowers,authors)
+        return (authorname,createDocument(conn,followersdb,authorname,dict(ids=twitter.followers.ids(id=authorname))))
+    followermap = dict(map(getFollowers,authors))
+    print "Followers created: %s" % ",".join([k for (k,v) in followermap.iteritems() if not v])
+    
