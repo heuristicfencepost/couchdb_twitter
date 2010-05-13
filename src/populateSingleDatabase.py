@@ -33,11 +33,11 @@ def createDatabase(dbconn,dbname):
     r = dbconn.getresponse()
     r.read() # body must be read in order for subsequent HTTP requests to work
     if r.status == 412:
-        return["Database %s already exists" % dbname]
+        return"Database %s already exists" % dbname
     elif r.status == 201:
-        return []
+        return ""
     else:
-        return ["Unable to create database %s: %s" % (dbname,r.reason)]
+        return "Unable to create database %s: %s" % (dbname,r.reason)
 
 def createDocument(dbconn,dbname,docname,doc):
 
@@ -45,11 +45,11 @@ def createDocument(dbconn,dbname,docname,doc):
     r = dbconn.getresponse()
     r.read() # body must be read in order for subsequent HTTP requests to work
     if r.status == 409:
-        return ["Version conflict detected for document %s" % (docname)]
+        return "Version conflict detected for document %s" % (docname)
     elif r.status == 201:
-        return []
+        return ""
     else:
-        return ["Unable to create document %s: %s" % (docname,r.reason)]
+        return "Unable to create document %s: %s" % (docname,r.reason)
 
 # Borrowed from the itertools docs
 def unique_everseen(iterable, key=None):
