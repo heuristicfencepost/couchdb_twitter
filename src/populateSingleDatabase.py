@@ -101,6 +101,7 @@ if __name__ == "__main__":
     def getFollowers(authorname):
         doc = dict(ids=twitter.followers.ids(id=authorname))
         doc['type'] = 'followers'
+        doc['screen_name'] = authorname
         tmp = createDocument(conn,dbname,"followers.%s" % authorname,doc)
         return (authorname,tmp)
     followermap = dict(map(getFollowers,authors))
