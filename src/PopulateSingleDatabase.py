@@ -25,7 +25,7 @@ searchquery = "#shotofjaq"
 
 # CouchDB REST API is fairly straightforward so we don't bother with any of
 # the various external Python modules for accessing them; httplib is just fine.
-def createDatabase(dbconn,dbname):
+def create_database(dbconn,dbname):
 
     # Most straightforward approach is to just try and create the DB; if it
     # already exists we get a 412 back (according to the CouchDB API).
@@ -39,7 +39,7 @@ def createDatabase(dbconn,dbname):
     else:
         return "Unable to create database %s: %s" % (dbname,r.reason)
 
-def createDocument(dbconn,dbname,docname,doc):
+def create_document(dbconn,dbname,docname,doc):
 
     dbconn.request("PUT","/%s/%s" % (dbname,docname),json.dumps(doc))
     r = dbconn.getresponse()
@@ -77,33 +77,33 @@ if __name__ == "__main__":
     conn = httplib.HTTPConnection(dbhost,dbport)
 
     # Create the DB before continuing
-    createDatabase(conn,dbname)
+    create_database(conn,dbname)
 
     searchresults = search.search(q=searchquery,rpp=100)
     tweets = searchresults["results"]
-    def createTweet(tweet):
+    def create_tweet(tweet):
         doc = tweet
         doc['resource'] = 'tweet'
-        tmp = createDocument(conn,dbname,"tweet.%s" % tweet["id"],doc)
+        tmp = create_document(conn,dbname,"tweet.%s" % tweet["id"],doc)
         return (tweet["id"],tmp)
-    tweetmap = dict(map(createTweet,tweets))
+    tweetmap = dict(map(create_tweet,tweets))
     print "Tweets created: %s" % ",".join([str(k) for (k,v) in tweetmap.iteritems() if not v])
 
     authors = list(unique_everseen([t["from_user"] for t in tweets]))
-    def createAuthor(authorname):
+    def create_author(authorname):
         doc = twitter.users.show(id=authorname)
         doc['resource'] = 'author'
-        tmp = createDocument(conn,dbname,"author.%s" % authorname,doc)
+        tmp = create_document(conn,dbname,"author.%s" % authorname,doc)
         return (authorname,tmp)
-    authormap = dict(map(createAuthor,authors))
+    authormap = dict(map(create_author,authors))
     print "Authors created: %s" % ",".join([k for (k,v) in authormap.iteritems() if not v])
 
-    def getFollowers(authorname):
+    def get_followers(authorname):
         doc = dict(ids=twitter.followers.ids(id=authorname))
         doc['resource'] = 'followers'
         doc['screen_name'] = authorname
-        tmp = createDocument(conn,dbname,"followers.%s" % authorname,doc)
+        tmp = create_document(conn,dbname,"followers.%s" % authorname,doc)
         return (authorname,tmp)
-    followermap = dict(map(getFollowers,authors))
+    followermap = dict(map(get_followers,authors))
     print "Followers created: %s" % ",".join([k for (k,v) in followermap.iteritems() if not v])
     

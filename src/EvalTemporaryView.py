@@ -6,7 +6,7 @@ from optparse import OptionParser
 dbhost = "localhost"
 dbport = 5984
 
-def evalView(dbconn,dbname,doc):
+def eval_view(dbconn,dbname,doc):
 
     dbconn.request("POST","/%s/_temp_view" % dbname,json.dumps(doc),{"Content-Type": "application/json"})
     r = dbconn.getresponse()
@@ -46,6 +46,6 @@ if __name__ == "__main__":
 
     # Do the POST
     conn = httplib.HTTPConnection(dbhost,dbport)
-    (rv,errors) = evalView(conn,options.dbname,view)
+    (rv,errors) = eval_view(conn,options.dbname,view)
 
     print rv

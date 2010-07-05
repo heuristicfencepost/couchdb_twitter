@@ -23,7 +23,7 @@ searchquery = "#shotofjaq"
 
 # CouchDB REST API is fairly straightforward so we don't bother with any of
 # the various external Python modules for accessing them; httplib is just fine.
-def createDatabase(dbconn,dbname):
+def create_database(dbconn,dbname):
 
     # Most straightforward approach is to just try and create the DB; if it
     # already exists we get a 412 back (according to the CouchDB API).
@@ -37,7 +37,7 @@ def createDatabase(dbconn,dbname):
     else:
         return "Unable to create database %s: %s" % (dbname,r.reason)
 
-def createDocument(dbconn,dbname,docname,doc):
+def create_document(dbconn,dbname,docname,doc):
 
     dbconn.request("PUT","/%s/%s" % (dbname,docname),json.dumps(doc))
     r = dbconn.getresponse()
@@ -78,29 +78,29 @@ if __name__ == "__main__":
 
     # Create a doc in the tweet database, one for each distinct tweet.  First
     # make sure the DB exists.
-    createDatabase(conn,tweetdb)
+    create_database(conn,tweetdb)
 
     searchresults = search.search(q=searchquery,rpp=100)
     tweets = searchresults["results"]
-    def createTweet(tweet):
-        return (tweet["id"],createDocument(conn,tweetdb,tweet["id"],tweet))
-    tweetmap = dict(map(createTweet,tweets))
+    def create_tweet(tweet):
+        return (tweet["id"],create_document(conn,tweetdb,tweet["id"],tweet))
+    tweetmap = dict(map(create_tweet,tweets))
     print "Tweets created: %s" % ",".join([str(k) for (k,v) in tweetmap.iteritems() if not v])
 
     # Add a new doc in the authors DB, one for each distinct tweet author
-    createDatabase(conn,authordb)
+    create_database(conn,authordb)
 
     authors = list(unique_everseen([t["from_user"] for t in tweets]))
-    def createAuthor(authorname):
-        return (authorname,createDocument(conn,authordb,authorname,twitter.users.show(id=authorname)))
-    authormap = dict(map(createAuthor,authors))
+    def create_author(authorname):
+        return (authorname,create_document(conn,authordb,authorname,twitter.users.show(id=authorname)))
+    authormap = dict(map(create_author,authors))
     print "Authors created: %s" % ",".join([k for (k,v) in authormap.iteritems() if not v])
 
     # Finally create a doc describing the followers for each distint author
-    createDatabase(conn,followersdb)
+    create_database(conn,followersdb)
 
-    def getFollowers(authorname):
-        return (authorname,createDocument(conn,followersdb,authorname,dict(ids=twitter.followers.ids(id=authorname))))
-    followermap = dict(map(getFollowers,authors))
+    def get_followers(authorname):
+        return (authorname,create_document(conn,followersdb,authorname,dict(ids=twitter.followers.ids(id=authorname))))
+    followermap = dict(map(get_followers,authors))
     print "Followers created: %s" % ",".join([k for (k,v) in followermap.iteritems() if not v])
     
