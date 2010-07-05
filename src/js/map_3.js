@@ -1,10 +1,14 @@
 function(doc) {
 
-    if (doc.type == "followers" && doc.screen_name == "shotofjaq") {
+    // Make the set of followers for the targetted author available to our
+    // reduce function
+    if (doc.resource == "followers" && doc.screen_name == "shotofjaq") {
 
         emit("followers",doc.ids);
     }
-    else if (doc.type == "author") {
+
+    // Need to make all authors available as well
+    else if (doc.resource == "author") {
 
         emit(doc.screen_name,doc.id);
     }

@@ -83,7 +83,7 @@ if __name__ == "__main__":
     tweets = searchresults["results"]
     def createTweet(tweet):
         doc = tweet
-        doc['type'] = 'tweet'
+        doc['resource'] = 'tweet'
         tmp = createDocument(conn,dbname,"tweet.%s" % tweet["id"],doc)
         return (tweet["id"],tmp)
     tweetmap = dict(map(createTweet,tweets))
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     authors = list(unique_everseen([t["from_user"] for t in tweets]))
     def createAuthor(authorname):
         doc = twitter.users.show(id=authorname)
-        doc['type'] = 'author'
+        doc['resource'] = 'author'
         tmp = createDocument(conn,dbname,"author.%s" % authorname,doc)
         return (authorname,tmp)
     authormap = dict(map(createAuthor,authors))
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     def getFollowers(authorname):
         doc = dict(ids=twitter.followers.ids(id=authorname))
-        doc['type'] = 'followers'
+        doc['resource'] = 'followers'
         doc['screen_name'] = authorname
         tmp = createDocument(conn,dbname,"followers.%s" % authorname,doc)
         return (authorname,tmp)
