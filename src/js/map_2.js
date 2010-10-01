@@ -3,6 +3,6 @@ function(doc) {
 
     if (doc.resource == "tweet") {
 
-        emit(doc.id,doc.from_user);
+        emit(doc.from_user,1);
     }
 }

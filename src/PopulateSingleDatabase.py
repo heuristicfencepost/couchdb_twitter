@@ -2,6 +2,8 @@ from itertools import ifilterfalse
 import httplib
 import json
 
+from optparse import OptionParser
+
 # Use Twitter APIs at http://mike.verdone.ca/twitter/, mainly because it's
 # a good illustration of a novel yet useful interface into REST APIs
 # corresponding to a well-defined URL space.
@@ -12,7 +14,8 @@ from twitter.api import Twitter
 #
 # - The first 100 tweets corresponding to a search term
 # - Information about the set of authors for these tweets
-# - The set of followers for each of these authors
+# - Followers for each of these authors
+# - followers for arbitrary user names
 #
 # Unlike the prior version of this script we store all information in a single
 # database in order to enable CouchDB's view mechanisms.  No need to think
@@ -21,7 +24,7 @@ dbhost = "localhost"
 dbport = 5984
 
 # Query to use when finding tweets.
-searchquery = "#shotofjaq"
+searchquery = "#couchdb"
 
 # CouchDB REST API is fairly straightforward so we don't bother with any of
 # the various external Python modules for accessing them; httplib is just fine.
@@ -69,7 +72,10 @@ def unique_everseen(iterable, key=None):
 
 if __name__ == "__main__":
 
-    dbname = "couchdb-twitter"
+    parser = OptionParser()
+    parser.add_option("-d", "--database", dest="dbname", help="Name of database to create")
+    parser.add_option("-f", "--followers", dest="followers", help="Extra users for whom we should retrieve followers")
+    (options, args) = parser.parse_args()
 
     search = Twitter(domain="search.twitter.com")
     twitter = Twitter()
@@ -77,14 +83,14 @@ if __name__ == "__main__":
     conn = httplib.HTTPConnection(dbhost,dbport)
 
     # Create the DB before continuing
-    create_database(conn,dbname)
+    create_database(conn,options.dbname)
 
     searchresults = search.search(q=searchquery,rpp=100)
     tweets = searchresults["results"]
     def create_tweet(tweet):
         doc = tweet
         doc['resource'] = 'tweet'
-        tmp = create_document(conn,dbname,"tweet.%s" % tweet["id"],doc)
+        tmp = create_document(conn,options.dbname,"tweet.%s" % tweet["id"],doc)
         return (tweet["id"],tmp)
     tweetmap = dict(map(create_tweet,tweets))
     print "Tweets created: %s" % ",".join([str(k) for (k,v) in tweetmap.iteritems() if not v])
@@ -93,7 +99,7 @@ if __name__ == "__main__":
     def create_author(authorname):
         doc = twitter.users.show(id=authorname)
         doc['resource'] = 'author'
-        tmp = create_document(conn,dbname,"author.%s" % authorname,doc)
+        tmp = create_document(conn,options.dbname,"author.%s" % authorname,doc)
         return (authorname,tmp)
     authormap = dict(map(create_author,authors))
     print "Authors created: %s" % ",".join([k for (k,v) in authormap.iteritems() if not v])
@@ -102,8 +108,17 @@ if __name__ == "__main__":
         doc = dict(ids=twitter.followers.ids(id=authorname))
         doc['resource'] = 'followers'
         doc['screen_name'] = authorname
-        tmp = create_document(conn,dbname,"followers.%s" % authorname,doc)
+        tmp = create_document(conn,options.dbname,"followers.%s" % authorname,doc)
         return (authorname,tmp)
     followermap = dict(map(get_followers,authors))
     print "Followers created: %s" % ",".join([k for (k,v) in followermap.iteritems() if not v])
-    
+
+    if options.followers:
+        extras = options.followers.split(",")
+        for extra in extras:
+                if not extra in authors:
+                    print "Retrieving followers for extra: %s" % extra
+                    doc = dict(ids=twitter.followers.ids(id=extra))
+                    doc['resource'] = 'followers'
+                    doc['screen_name'] = extra
+                    tmp = create_document(conn,options.dbname,"followers.%s" % extra,doc)
