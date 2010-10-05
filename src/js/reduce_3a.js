@@ -8,7 +8,7 @@ function(keys, values, rereduce) {
 
         // Strip keys out of (key,id) tuples.  Even though we're using
         // a grouping function keys are of the form [Twitter ID, keyname]
-        // so we need to take teh second item from whatever we find.
+        // so we need to take the second item from whatever we find.
         var truekeys = keys.map(function(arr) { return arr[0][1]; });
 
         // Build an object containing key-value pairs.  It's a bit like
